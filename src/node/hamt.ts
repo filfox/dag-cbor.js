@@ -107,9 +107,13 @@ export default class HAMT<K extends HAMTKey, V extends ParamType> {
       }
       keyBuffer = Buffer.from(string, 'hex');
     }
-    const hashNumber = BigInt(`0x${sha256(keyBuffer).toString('hex')}`);
-    for (let chunk = 1; chunk <= 256 / 5; ++chunk) {
-      const index = Number(hashNumber >> BigInt(256 - chunk * 5) & 0x1fn);
+    const hash = sha256(keyBuffer);
+    for (let chunk = 0; chunk <= 256 / 5; ++chunk) {
+      const bufferIndex = chunk * 5 >>> 3;
+      const bufferOffset = chunk * 5 & 7;
+      const index = bufferOffset <= 3
+        ? hash[bufferIndex] >>> 3 - bufferOffset & 0x1f
+        : hash[bufferIndex] << bufferOffset - 3 & 0x1f | hash[bufferIndex + 1] >>> 11 - bufferOffset;
       if ((node.Bitfield & 1 << index) === 0) {
         return;
       }
