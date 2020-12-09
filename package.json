@@ -1,6 +1,6 @@
 {
   "name": "@filfox/dag-cbor",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Filecoin data serializer and deserializer",
   "author": "Filfox team",
   "license": "MIT",
