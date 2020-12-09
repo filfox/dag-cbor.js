@@ -10,7 +10,10 @@
     "dist"
   ],
   "scripts": {
-    "build": "rimraf dist && tsc -p tsconfig.json",
+    "prebuild": "rimraf dist",
+    "build": "npm run build:browser && npm run build:node",
+    "build:browser": "tsc -p tsconfig.browser.json",
+    "build:node": "tsc -p tsconfig.node.json",
     "lint": "eslint src/**/*.ts --fix"
   },
   "dependencies": {
