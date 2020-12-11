@@ -1,5 +1,5 @@
 export { default as Address } from './address';
-export { default as AMT } from './amt';
+export { default as AMT, AMTType } from './amt';
 export { default as Bitfield } from './bitfield';
 export { default as BufferReader } from './buffer-reader';
 export { default as Cid } from './cid';
