@@ -13,10 +13,13 @@ export default class Address {
   static fromString(string: string) {
     if (string[1] === '0') {
       const buffer: number[] = [];
-      let n = BigInt(string.slice(2));
+      let n = Number(string.slice(2));
+      if (n === 0) {
+        return new Address(0, Buffer.from([0]));
+      }
       while (n) {
-        buffer.push(Number(n & 0x7fn));
-        n >>= 7n;
+        buffer.push(n & 0x7f);
+        n >>>= 7;
       }
       for (let i = 0; i < buffer.length - 1; ++i) {
         buffer[i] |= 0x80;
@@ -39,9 +42,9 @@ export default class Address {
   toString() {
     let string: string;
     if (this._protocol === 0) {
-      let result = 0n;
+      let result = 0;
       for (let i = 0; i < this._data.length; ++i) {
-        result |= BigInt(this._data[i] & 0x7f) << BigInt(7 * i);
+        result |= (this._data[i] & 0x7f) << 7 * i;
         if (this._data[i] < 0x80) {
           break;
         }

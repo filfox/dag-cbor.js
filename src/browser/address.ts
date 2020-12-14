@@ -15,6 +15,9 @@ export default class Address {
     if (string[1] === '0') {
       const buffer: number[] = [];
       let n = Number(string.slice(2));
+      if (n === 0) {
+        return new Address(0, Buffer.from([0]));
+      }
       while (n) {
         buffer.push(n & 0x7f);
         n >>>= 7;
