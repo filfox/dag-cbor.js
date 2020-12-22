@@ -48,7 +48,7 @@ export default class Bitfield {
         let n = 0;
         for (let i = 0; ; ++i) {
           const x = reader.read(8);
-          n |= (x & 0x7f) << 7 * i;
+          n += (x & 0x7f) * 2 ** (7 * i);
           if (x < 0x80) {
             break;
           }
