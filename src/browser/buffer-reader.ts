@@ -90,7 +90,7 @@ export default class BufferReader {
     } else if (buffer[0] === 0) {
       return new BigNumber(buffer.toString('hex'), 16);
     } else {
-      return new BigNumber(buffer.slice(2).toString('hex'), 16).negated();
+      return new BigNumber(buffer.slice(1).toString('hex'), 16).negated();
     }
   }
 

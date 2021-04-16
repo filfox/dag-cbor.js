@@ -87,7 +87,7 @@ export default class BufferReader {
     } else if (buffer[0] === 0) {
       return BigInt(`0x${buffer.toString('hex')}`);
     } else {
-      return -BigInt(`0x${buffer.slice(2).toString('hex')}`);
+      return -BigInt(`0x${buffer.slice(1).toString('hex')}`);
     }
   }
 
