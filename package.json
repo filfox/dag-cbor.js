@@ -3,6 +3,10 @@
   "version": "0.1.5",
   "description": "Filecoin data serializer and deserializer",
   "author": "Filfox team",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/filfox/dag-cbor.js.git"
+  },
   "license": "MIT",
   "main": "dist/node/index.js",
   "browser": "dist/browser/index.js",
