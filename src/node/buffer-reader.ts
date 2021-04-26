@@ -4,7 +4,7 @@ import AMT, { AMTType } from './amt';
 import BitField from './bitfield';
 import Cid from './cid';
 import { decodeParamsFromReader } from './decoder';
-import HAMT, { HAMTKey, HAMTType } from './hamt';
+import HAMT, { HAMTKey, HAMTType, HAMTVersion } from './hamt';
 import { ParamType } from './parameter';
 import Signature from './signature';
 
@@ -134,8 +134,8 @@ export default class BufferReader {
     return AMT.fromBufferReader(this, type);
   }
 
-  readHAMT<K extends HAMTKey, V extends ParamType>(type: HAMTType<K, V>) {
-    return HAMT.fromBufferReader(this, type);
+  readHAMT<K extends HAMTKey, V extends ParamType>(type: HAMTType<K, V>, version: HAMTVersion = 3, bitWidth = 5) {
+    return HAMT.fromBufferReader(this, type, version, bitWidth);
   }
 
   readNull() {
@@ -153,6 +153,10 @@ export default class BufferReader {
 
   push(buffer: Buffer) {
     this.buffer = Buffer.concat([this.buffer, buffer]);
+  }
+
+  slice(...args: number[]) {
+    return this.buffer.slice(...args);
   }
 
   private readByte() {
