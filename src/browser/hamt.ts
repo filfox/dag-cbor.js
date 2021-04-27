@@ -21,7 +21,12 @@ export type HAMTKey = 'address' | 'cid' | 'number';
 export type HAMTVersion = 2 | 3;
 
 export class HAMTType<K extends HAMTKey, V extends ParamType> {
-  constructor(public readonly KeyType: K, public readonly ValueType: V) {}
+  constructor(
+    public readonly KeyType: K,
+    public readonly ValueType: V,
+    public readonly version: HAMTVersion,
+    public readonly bitWidth: number,
+  ) {}
 
   public keyEquals(x: DecodedParamType<K>, y: DecodedParamType<K>) {
     if (this.KeyType === 'address') {
@@ -40,12 +45,8 @@ class HAMTPointer<K extends HAMTKey, V extends ParamType> {
     public readonly KVs: { key: DecodedParamType<K>; value: DecodedParamType<V> }[] | null,
   ) {}
 
-  static fromBufferReader<K extends HAMTKey, V extends ParamType>(
-    reader: BufferReader,
-    type: HAMTType<K, V>,
-    version: HAMTVersion,
-  ): HAMTPointer<K, V> {
-    if (version === 2) {
+  static fromBufferReader<K extends HAMTKey, V extends ParamType>(reader: BufferReader, type: HAMTType<K, V>): HAMTPointer<K, V> {
+    if (type.version === 2) {
       assert.deepStrictEqual(reader.readHeader(), { majority: 5, extra: 1 });
       assert.deepStrictEqual(reader.readHeader(), { majority: 3, extra: 1 });
       const flag = reader.read(1).toString();
@@ -103,29 +104,22 @@ export default class HAMT<K extends HAMTKey, V extends ParamType> {
     public readonly Bitfield: number,
     public readonly Pointers: HAMTPointer<K, V>[],
     private readonly type: HAMTType<K, V>,
-    private readonly version: HAMTVersion,
-    private readonly bitWidth: number,
   ) {}
 
-  static fromBuffer<K extends HAMTKey, V extends ParamType>(buffer: Buffer, type: HAMTType<K, V>, version: HAMTVersion, bitWidth: number) {
-    return HAMT.fromBufferReader(new BufferReader(buffer), type, version, bitWidth);
+  static fromBuffer<K extends HAMTKey, V extends ParamType>(buffer: Buffer, type: HAMTType<K, V>) {
+    return HAMT.fromBufferReader(new BufferReader(buffer), type);
   }
 
-  static fromBufferReader<K extends HAMTKey, V extends ParamType>(
-    reader: BufferReader,
-    type: HAMTType<K, V>,
-    version: HAMTVersion,
-    bitWidth: number
-  ) {
+  static fromBufferReader<K extends HAMTKey, V extends ParamType>(reader: BufferReader, type: HAMTType<K, V>) {
     assert.deepStrictEqual(reader.readHeader(), { majority: 4, extra: 2 });
     const bitfieldBytes = reader.readBytes();
     const bitfield = bitfieldBytes.length === 0 ? 0 : Number.parseInt(bitfieldBytes.toString('hex'), 16);
     const pointerLength = reader.readArrayLength();
     const pointers: HAMTPointer<K, V>[] = [];
     for (let i = 0; i < pointerLength; ++i) {
-      pointers.push(HAMTPointer.fromBufferReader(reader, type, version));
+      pointers.push(HAMTPointer.fromBufferReader(reader, type));
     }
-    return new HAMT<K, V>(bitfield, pointers, type, version, bitWidth);
+    return new HAMT<K, V>(bitfield, pointers, type);
   }
 
   async get(key: DecodedParamType<K>, chainReadObj: ChainReadObj) {
@@ -145,14 +139,15 @@ export default class HAMT<K extends HAMTKey, V extends ParamType> {
       }
       keyBuffer = Buffer.from(string, 'hex');
     }
+    const bitWidth = this.type.bitWidth;
     const hash = sha256(keyBuffer);
-    for (let chunk = 0; chunk < 256 / this.bitWidth; ++chunk) {
-      const bufferIndex = chunk * this.bitWidth >>> 3;
-      const bufferOffset = chunk * this.bitWidth & 7;
-      const index = bufferOffset <= 8 - this.bitWidth
-        ? hash[bufferIndex] >>> 8 - this.bitWidth - bufferOffset & (1 << this.bitWidth) - 1
-        : hash[bufferIndex] << bufferOffset + this.bitWidth - 8 & (1 << this.bitWidth) - 1
-          | hash[bufferIndex + 1] >>> 16 - this.bitWidth - bufferOffset;
+    for (let chunk = 0; chunk < 256 / bitWidth; ++chunk) {
+      const bufferIndex = chunk * bitWidth >>> 3;
+      const bufferOffset = chunk * bitWidth & 7;
+      const index = bufferOffset <= 8 - bitWidth
+        ? hash[bufferIndex] >>> 8 - bitWidth - bufferOffset & (1 << bitWidth) - 1
+        : hash[bufferIndex] << bufferOffset + bitWidth - 8 & (1 << bitWidth) - 1
+          | hash[bufferIndex + 1] >>> 16 - bitWidth - bufferOffset;
       if ((node.Bitfield & 1 << index) === 0) {
         return;
       }
@@ -160,7 +155,7 @@ export default class HAMT<K extends HAMTKey, V extends ParamType> {
       const pointer = node.Pointers[pointerIndex];
       if (pointer.Link) {
         const buffer = await chainReadObj(pointer.Link);
-        node = HAMT.fromBuffer(buffer, this.type, this.version, this.bitWidth);
+        node = HAMT.fromBuffer(buffer, this.type);
       } else {
         return pointer.KVs!.find(p => this.type.keyEquals(p.key, key))?.value;
       }
@@ -183,7 +178,7 @@ export default class HAMT<K extends HAMTKey, V extends ParamType> {
     for (const pointer of this.Pointers) {
       if (pointer.Link) {
         const buffer = await chainReadObj(pointer.Link);
-        const node = HAMT.fromBuffer(buffer, this.type, this.version, this.bitWidth);
+        const node = HAMT.fromBuffer(buffer, this.type);
         yield* node.entries(chainReadObj);
       } else {
         for (const { key, value } of pointer.KVs!) {
