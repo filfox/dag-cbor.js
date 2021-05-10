@@ -1,9 +1,10 @@
 import * as assert from 'assert';
 import * as base32 from 'base32.js';
 import BufferReader from './buffer-reader';
+import BufferWriter from './buffer-writer';
 
 export default class Cid {
-  constructor(private readonly _data: Buffer) {}
+  constructor(public readonly data: Buffer) {}
 
   static fromBuffer(buffer: Buffer) {
     return Cid.fromBufferReader(new BufferReader(buffer));
@@ -21,11 +22,18 @@ export default class Cid {
     return new Cid(buffer);
   }
 
-  get data() {
-    return this._data;
+  toBuffer() {
+    const writer = new BufferWriter();
+    this.toBufferWriter(writer);
+    return writer.toBuffer();
+  }
+
+  toBufferWriter(writer: BufferWriter) {
+    writer.writeHeader(6, 42);
+    writer.writeBytes(Buffer.concat([Buffer.from([0]), this.data]));
   }
 
   toString() {
-    return `b${new base32.Encoder({ type: 'rfc4648', lc: true }).write(this._data).finalize()}`;
+    return `b${new base32.Encoder({ type: 'rfc4648', lc: true }).write(this.data).finalize()}`;
   }
 }

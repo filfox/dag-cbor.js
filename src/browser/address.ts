@@ -5,7 +5,7 @@ import { blake2b } from 'blakejs';
 const addressPrefix = 'f';
 
 export default class Address {
-  constructor(private readonly _protocol: number, private readonly _data: Buffer) {}
+  constructor(public readonly protocol: number, public readonly data: Buffer) {}
 
   static fromBuffer(buffer: Buffer) {
     return new Address(buffer[0], buffer.slice(1));
@@ -32,32 +32,28 @@ export default class Address {
     }
   }
 
-  get protocol() {
-    return this._protocol;
-  }
-
-  get data() {
-    return this._data;
+  toBuffer() {
+    return Buffer.concat([Buffer.from([this.protocol]), this.data]);
   }
 
   toString() {
     let string: string;
-    if (this._protocol === 0) {
+    if (this.protocol === 0) {
       let result = 0;
-      for (let i = 0; i < this._data.length; ++i) {
-        result |= (this._data[i] & 0x7f) << 7 * i;
-        if (this._data[i] < 0x80) {
+      for (let i = 0; i < this.data.length; ++i) {
+        result |= (this.data[i] & 0x7f) << 7 * i;
+        if (this.data[i] < 0x80) {
           break;
         }
       }
       string = result.toString();
     } else {
-      const checksum = blake2b(Buffer.from([this._protocol, ...this._data]), null, 4);
+      const checksum = blake2b(Buffer.from([this.protocol, ...this.data]), null, 4);
       string = new base32.Encoder({ type: 'rfc4648', lc: true })
-        .write(this._data)
+        .write(this.data)
         .write(checksum)
         .finalize();
     }
-    return addressPrefix + this._protocol + string;
+    return addressPrefix + this.protocol + string;
   }
 }

@@ -1,8 +1,9 @@
 import { Buffer } from 'buffer';
 import BufferReader from './buffer-reader';
+import BufferWriter from './buffer-writer';
 
 export default class Signature {
-  constructor(private readonly type: number, private readonly signature: Buffer) {}
+  constructor(public readonly Type: number, public readonly Signature: Buffer) {}
 
   static fromBuffer(buffer: Buffer) {
     return Signature.fromBufferReader(new BufferReader(buffer));
@@ -13,11 +14,13 @@ export default class Signature {
     return new Signature(buffer[0], buffer.slice(1));
   }
 
-  get Type() {
-    return this.type;
+  toBuffer() {
+    const writer = new BufferWriter();
+    this.toBufferWriter(writer);
+    return writer.toBuffer();
   }
 
-  get Signature() {
-    return this.signature;
+  toBufferWriter(writer: BufferWriter) {
+    writer.writeBytes(Buffer.concat([Buffer.from([this.Type]), this.Signature]));
   }
 }
