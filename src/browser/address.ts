@@ -33,7 +33,7 @@ export default class Address {
   }
 
   toBuffer() {
-    return Buffer.concat([Buffer.from([this.protocol]), this.data]);
+    return Buffer.concat([Buffer.from([this.protocol]), Buffer.from(this.data)]);
   }
 
   toString() {
