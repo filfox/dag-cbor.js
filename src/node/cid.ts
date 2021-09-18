@@ -30,7 +30,7 @@ export default class Cid {
 
   toBufferWriter(writer: BufferWriter) {
     writer.writeHeader(6, 42);
-    writer.writeBytes(Buffer.concat([Buffer.from([0]), this.data]));
+    writer.writeBytes(Buffer.concat([Buffer.from([0]), Buffer.from(this.data)]));
   }
 
   toString() {
