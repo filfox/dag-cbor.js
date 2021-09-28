@@ -84,7 +84,7 @@ export default class BufferWriter {
   }
 
   writeBitfield(bitfield: Bitfield) {
-    // TODO
+    this.writeBytes(bitfield.toBuffer());
   }
 
   writeSignature(signature: Signature) {

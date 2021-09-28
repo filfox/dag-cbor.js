@@ -7,6 +7,7 @@ import Cid from './cid';
 import { HAMTType } from './hamt';
 import { DecodedParamType, OptionalParam, ParamType } from './parameter';
 import Signature from './signature';
+import Bitfield from './bitfield';
 
 export function encodeParamsToWriter<T extends ParamType>(writer: BufferWriter, parameter: DecodedParamType<T>, paramType: T) {
   if (paramType instanceof OptionalParam) {
@@ -24,6 +25,7 @@ export function encodeParamsToWriter<T extends ParamType>(writer: BufferWriter, 
         writer.writeBigInt(parameter as BigNumber);
         break;
       case 'bitfield':
+        writer.writeBitfield(parameter as Bitfield);
         break;
       case 'boolean':
         writer.writeBoolean(parameter as boolean);

@@ -25,6 +25,31 @@ class BitBufferReader {
   }
 }
 
+class BitBufferWriter {
+  private bits = 0;
+  private bitCap = 0;
+
+  constructor(private buffer: number[]) {}
+
+  write(val: number, length: number) {
+    this.bits |= val << this.bitCap;
+    this.bitCap += length;
+    if (this.bitCap >= 8) {
+      this.buffer.push(this.bits & 0xff);
+      this.bits >>= 8;
+      this.bitCap -= 8;
+    }
+  }
+
+  finish() {
+    this.buffer.push(this.bits & 0xff);
+  }
+
+  get data() {
+    return Buffer.from(this.buffer);
+  }
+}
+
 export default class Bitfield {
   private constructor(private _chunks: number[]) {}
 
@@ -59,6 +84,44 @@ export default class Bitfield {
     return new Bitfield(chunks);
   }
 
+  // convert number to Bitfield for single sectorID
+  static fromNumber(data: number) {
+    if (data === null || data === undefined) {
+      return new Bitfield([]);
+    }
+    const chunks: number[] = [];
+    chunks.push(data);
+    chunks.push(1);
+    return new Bitfield(chunks);
+  }
+
+  // convert number array to Bitfield for sequence sectorID
+  static fromNumberArray(data: number[]) {
+    if (data === null || data === undefined || data.length === 0) {
+      return new Bitfield([]);
+    }
+    data.sort((a, b) => a - b);
+    const chunks: number[] = [];
+    let offset = 0;
+    let before = data[0] - 1;
+    chunks.push(data[0]);
+    for (let i = 0; i < data.length; i++) {
+      if (data[i] === before + 1) {
+        before = data[i];
+        offset += 1;
+      } else {
+        chunks.push(offset);
+        chunks.push(data[i] - before - offset);
+        offset = 1;
+        before = data[i];
+      }
+    }
+    if (offset !== 0) {
+      chunks.push(offset);
+    }
+    return new Bitfield(chunks);
+  }
+
   get chunks() {
     return this._chunks;
   }
@@ -75,5 +138,48 @@ export default class Bitfield {
       offset += length;
     }
     return ranges;
+  }
+
+  computeLength(varBuf: number[], x: number) {
+    let i = 0;
+    while (x >= 0x80) {
+      varBuf[i] = x & 0xff | 0x80;
+      x >>= 7;
+      i++;
+    }
+    varBuf[i] = x;
+    return i + 1;
+  }
+
+  toBuffer() {
+    if (this.chunks.length === 0) {
+      return Buffer.from([]);
+    }
+    const writer = new BitBufferWriter([]);
+    writer.write(0, 2);
+    if (this.chunks[0] === 0) {
+      writer.write(1, 1);
+    } else {
+      writer.write(0, 1);
+    }
+
+    const varBuf: number[] = [];
+    for (let i = 0; i < this.chunks.length; i++) {
+      const num = this.chunks[i];
+      if (num === 1) {
+        writer.write(1, 1);
+      } else if (num < 16) {
+        writer.write(2, 2);
+        writer.write(num & 0xff, 4);
+      } else if (num >= 16) {
+        writer.write(0, 2);
+        const len = this.computeLength(varBuf, num);
+        for (let j = 0; j < len; j++) {
+          writer.write(varBuf[j], 8);
+        }
+      }
+    }
+    writer.finish();
+    return writer.data;
   }
 }
