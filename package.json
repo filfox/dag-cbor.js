@@ -1,6 +1,6 @@
 {
   "name": "@filfox/dag-cbor",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Filecoin data serializer and deserializer",
   "author": "Filfox team",
   "repository": {
