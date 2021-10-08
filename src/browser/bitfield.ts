@@ -169,7 +169,7 @@ export default class Bitfield {
       const num = this.chunks[i];
       if (num === 1) {
         writer.write(1, 1);
-      } else if (num < 16) {
+      } else if (num > 1 && num < 16) {
         writer.write(2, 2);
         writer.write(num & 0xff, 4);
       } else if (num >= 16) {
