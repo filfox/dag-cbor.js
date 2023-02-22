@@ -1,11 +1,12 @@
 import { Buffer } from 'buffer';
+import * as varint from 'varint';
 import * as base32 from 'base32.js';
 import { blake2b } from 'blakejs';
 
 const addressPrefix = 'f';
 
 export default class Address {
-  constructor(public readonly protocol: number, public readonly data: Buffer) {}
+  constructor(public readonly protocol: number, public data: Buffer) { }
 
   static fromBuffer(buffer: Buffer) {
     return new Address(buffer[0], buffer.slice(1));
@@ -48,8 +49,15 @@ export default class Address {
       }
       string = result.toString();
     } else {
+      string = '';
       const checksum = blake2b(Buffer.from([this.protocol, ...this.data]), null, 4);
-      string = new base32.Encoder({ type: 'rfc4648', lc: true })
+      if (this.protocol === 4) {
+        const namespace = varint.decode(this.data);
+        const n = varint.decode.bytes;
+        this.data = this.data.slice(n);
+        string = `${namespace}f`;
+      }
+      string += new base32.Encoder({ type: 'rfc4648', lc: true })
         .write(this.data)
         .write(checksum)
         .finalize();
