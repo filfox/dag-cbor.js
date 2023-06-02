@@ -8,8 +8,10 @@ import HAMT, { HAMTKey, HAMTType } from './hamt';
 import { ParamType } from './parameter';
 import Signature from './signature';
 
+const cborNull: number = 0xf6;
+
 export default class BufferReader {
-  constructor(private buffer: Buffer) {}
+  constructor(private buffer: Buffer) { }
 
   get length() {
     return this.buffer.length;
@@ -92,6 +94,11 @@ export default class BufferReader {
   }
 
   readAddress() {
+    const byte = this.buffer[0];
+    if (byte === cborNull) {
+      this.skip(1);
+      return Address.fromBuffer(Buffer.from([byte]));
+    }
     const buffer = this.readBytes();
     assert(buffer.length <= 64);
     return Address.fromBuffer(buffer);

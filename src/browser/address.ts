@@ -38,6 +38,10 @@ export default class Address {
   }
 
   toString() {
+    if (this.data.length === 0) {
+      return '';
+    }
+
     let string: string;
     if (this.protocol === 0) {
       let result = 0;
